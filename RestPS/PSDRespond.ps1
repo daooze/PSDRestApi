@@ -126,6 +126,19 @@ function Expand-Variables {
 }
 
 function Import-ScriptConfig {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    .Example
+    #>
     [CmdletBinding()]
     param(
     [string]$Filename = $null
@@ -181,6 +194,19 @@ function Import-ScriptConfig {
 }
 
 function Get-IdentifiersFromPostData {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    .Example
+    #>
     param(
     [Parameter(Mandatory)]
     [string]$PostData,
@@ -204,6 +230,19 @@ function Get-IdentifiersFromPostData {
 }
 
 function Get-ConditionFromPostData {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    .Example
+    #>
     param(
     [Parameter(Mandatory)]
     [string]$PostData,
@@ -226,6 +265,21 @@ function Get-ConditionFromPostData {
 }
 
 function Get-IdentifiersFromGetArgs {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    TODO: Check, and possibly add, handling of the "--" parameter. Maybe it is not required?
+
+    .Example
+    #>
     param(
     [Parameter(Mandatory)]
     [string]$Args
@@ -253,6 +307,19 @@ function Get-IdentifiersFromGetArgs {
 }
 
 function Get-ConditionFromGetArgs {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    .Example
+    #>
     param(
     [Parameter(Mandatory)]
     [string]$Args
@@ -278,6 +345,8 @@ function Get-IdentifiersFromJson {
     .LINK
 
     .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
     .Example
     #>
@@ -302,6 +371,19 @@ function Get-IdentifiersFromJson {
 }
 
 function Get-ConditionFromJson {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    .Example
+    #>
     param(
     [PSCustomObject]$Json
     )
@@ -314,6 +396,19 @@ function Get-ConditionFromJson {
 }
 
 function Get-ExtendedIdentifiers {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    .Example
+    #>
     param(
     [Parameter(Mandatory)]
     [AllowNull()]
@@ -380,6 +475,19 @@ function Get-ExtendedIdentifiers {
 }
 
 function Invoke-ExtendedDataMatch {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    .Example
+    #>
     param(
     [Parameter(Mandatory, ValueFromPipeline)]
     [string]$InputString,
@@ -418,6 +526,19 @@ function Invoke-ExtendedDataMatch {
 }
 
 function Compare-ConfigCondition {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    .Example
+    #>
     param(
     [Parameter(Mandatory)]
     [psobject]$Condition,
@@ -473,6 +594,19 @@ function Compare-ConfigCondition {
 }
 
 function Measure-ConfigNodes {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    .Example
+    #>
     param(
     [Parameter(Mandatory)]
     [AllowNull()]
@@ -495,6 +629,19 @@ function Measure-ConfigNodes {
 }
 
 function Get-NamedConfig {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    .Example
+    #>
     param(
     [Parameter(Mandatory)]
     [psobject[]]$Config,
@@ -513,6 +660,19 @@ function Get-NamedConfig {
 }
 
 function Merge-ConfigurationSettings {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    .Example
+    #>
     param(
     [AllowNull()]
     [psobject]$First = $null,
@@ -572,6 +732,19 @@ function Merge-ConfigurationSettings {
 }
 
 function Find-MatchingConfig {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .LINK
+
+    .NOTES
+    Copyright: (c) 2025, Malte Hohmann (@daooze)
+    MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+    .Example
+    #>
     [CmdletBinding()]
     param(
     [Parameter(Mandatory)]
@@ -727,7 +900,6 @@ try {
         Write-Verbose "$($MyInvocation.MyCommand.Name): Using default base config"
         $config = Import-ScriptConfig -ErrorAction Stop
     }
-#    Import-ScriptConfig -Filename ($PSCommandPath -replace '\.[a-z0-9]+$', '.json') -ErrorAction Stop
 }
 catch {
     Write-Debug "$($MyInvocation.MyCommand.Name): $($_.Exception.Message)"

@@ -13,7 +13,7 @@
           Contact: @Mikael_Nystrom , @jarwidmark , @mniehaus, @PowershellCrack, @Soupman98
           Primary: @Mikael_Nystrom
           Created:
-          Modified: 2022-09-18
+          Modified: 2025-02-26
 
           Version - 0.0.0 - () - Finalized functional version 1.
           Version - 0.0.1 - () - Added support forParallels Virtual Platform,Standard PC (Q35 + ICH9, 2009 and Standard PC (i440FX + PIIX, 1996)
@@ -24,7 +24,7 @@
 		  Version - 0.0.6 - (PC) - Removed loging to show "TODO", no point in showing things that does not work yet
 		  Version - 0.0.7 - (MN) - Added rule to VMware modelalias section, all VMware modelalias will now be "WMware"
 		  Version - 0.0.8 - (MN) - Added rule to VMware modelalias section, replacing the "," with "_", replace " " with "_"
-          Version - 0.0.9 - (MH) - Added processing of RestAPI calls to Get-PSDSettings() function
+          Version - 0.0.9 - (@daooze) - Added processing of RestAPI calls to Get-PSDSettings() function
 
           TODO:
 
