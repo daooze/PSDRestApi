@@ -1,0 +1,45 @@
+[
+	{
+		"name": "My prepend-only config",
+		"settings": {
+			"OSInstall": "NO",
+			"FinishAction": "Shutdown"
+		}
+	},
+	{
+		"name": "My own config",
+		"compare_method": "and",
+		"conditions": {
+			"HTTP_REQUEST_CLIENTCERT_SUBJECT": "contain:CN=RestAPI Client 1",
+			"MAKE": "begin:Lenovo"
+		},
+		"settings": {
+			"MachineObjectOU": "OU=IT,OU=Computers,DC=contoso,DC=com",
+			"OSInstall": "YES"
+		}
+	},
+	{
+		"name": "My own config 2",
+		"compare_method": "and",
+		"conditions": {
+			"uuid": "begin:1e5f6f2e-1932-4d51-"
+		},
+		"prepend_configs": [
+			{
+				"name": "My prepend-only config"
+			},
+			{
+				"name": "My own config",
+				"merge_method": "replace",
+				"conditions": {
+					"make": "begin:Lenovo",
+					"HTTP_REQUEST_CLIENTCERT_SUBJECT": "contain:CN=RestAPI client cert for IT staff"
+				},
+				"compare_method": "and"
+			}
+		],
+		"settings": {
+			"JoinDomain": "contoso.com"
+		}
+	}
+]
