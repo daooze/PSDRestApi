@@ -1,0 +1,387 @@
+Usage documentation for the PSDRestAPI module.
+(c) 2025 Malte Hohmann (@daooze) <da.ooze@gmx.net>
+All parts of this module are released under the MIT License (https://opensource.org/licenses/MIT)
+
+All parts of this module have been developed for my own needs and are provided to the public without any warranty. If you use them, or parts of them, you do it on your own risk. I am in no way responsible for any issues caused by using these scripts.
+
+This module makes use of the Test-Tls Powershell function, (c) 2024 Jordan Borean.
+
+
+Content of the repository
+=========================
+The repository contains the following files and folders:
+
+<repository>
+|
++--- PSD
+|    |
+|    +--- Modules
+|       |
+|       +--- PSDRestApi.psm1
+|       +--- PSDGather.psm1
+|
++--- RestPS
+|    |
+|    +--- config
+|    |    |
+|    |    +--- sample-config.json
+|    |
+|    +--- PSDRespond.ps1
+|
++--- LICENSE
++--- README.MD
++--- USAGE.TXT
+
+PSDRestApi.psm1 is the main module holding all required functions to make a RestAPI call. It contains public functions as well as helper functions.
+PSDGather.psm1 is a replacement for the PSDGather.psm1 file shipped with PSD. It extends the original PSDGather.psm1 by the processing logic for RestAPI calls, no more, no less.
+PSDRespond.ps1 is a script called by the RestPS process. It processes the requests from the calling system and sends back a response.
+sample-config.json is a sample configuration file for PSDRespond.ps1.
+LICENSE is the license file for all parts of this software.
+README.MD contains basic infos only.
+USAGE.TXT is this file (which you may have noticed already).
+
+
+Setting up the PSD side to make use of PSDRestApi script
+========================================================
+
+Requirements:
+-------------
+A working PSD deployment must be available. You need write access to the deployment share(s) and must be able to update the installation images.
+
+
+Installation:
+-------------
+You need to make sure that the PSDRestApi module is available in the installation image. To achieve this you have several options.
+
+Option 1:
+* Create a new folder %DEPLOYROOT%\Tools\Modules\PSDRestApi"
+* Copy the file "PSDRestApi.psm1" from the repository to the newly created folder.
+* Edit the file "%DeploymentShare%\Templates\LiteTouchPE.xml" and add the following line somewhere in the <Content> part of the file:
+  <Copy source="%DEPLOYROOT%\Tools\Modules\PSDRestApi\PSDRestApi.psm1" dest="Deploy\Tools\Modules\PSDRestApi\PSDRestApi.psm1" />
+
+Options 2:
+* Create a new folder "%DeploymentShare%\ExtraFiles\Deploy\Tools\Modules\PSDRestApi"
+* Copy the file "PSDRestApi.psm1" from the repository to the newly created folder.
+
+You also need an updated "PSDGather.psm1" file. As with PSDRestApi.psm1 you have several options of including it to your deployment share.
+
+Option 1:
+* Copy the file "PSDGather.psm1" from the repository to the folder "%DeploymentShare%\Tools\Modules\PSDGather", overwriting the original file. Don´t forget to take a backup of the original file first!
+
+Option 2:
+* Create a new folder "%DeploymentShare%\ExtraFiles\Deploy\Tools\Modules\PSDGather"
+* Copy the file "PSDGather.psm1" from the repository to the newly created folder.
+
+All the above steps have to be done on every deployment share you want to utilize the RestAPI. Afterwards, update the deployment share to have the new files added to the image.
+
+
+Usage:
+------
+To make a RestAPI call, edit your "CustomSettings.ini" file and add a new section to it. Inside the new section, add at least the following two key=value pairs:
+
+RestURI=<URL of the RestAPI call>
+Parameters=<Names of parameters to submit to the RestAPI server>
+
+If the key "RestURI" exists somewhere in the INI section, the updated "PSDGather.psm1" treats the whole section as a configuration for one (!) RestAPI call. Any variables defined within this section are ignored! You can create additional RestAPI sections if required.
+
+Here is an example INI section with all available options:
+
+[MyRestAPISection]
+; RestURI=https://restapi.domain.local/settings
+; RestMethod=POST
+; Parameters=UUID,Make,Model,SerialNumber
+; ParameterCondition=OR
+; ClientCertificate=MyCerts\RestAPI\MyCert.pfx
+; ClientCertificatePassword=%USERPASSWORD%-4MyC3rT-0815
+; ServerCertificateThumbprint=abcd0123456789efabcdef0123456789abcdef01
+; AuthUser=%USERDOMAIN%\%USERID%
+; AuthPassword=%USERPASSWORD%
+; SslProtocol=tls13
+; SendCredentialsOverInsecureConnection=I know what I am doing
+
+Following is a, more or less, brief explanation of the single options for the INI section:
+------------------------------------------------------------------------------------------
+Name.......: RestURI
+Description: [env] (Mandatory)
+             This is the URL to call. You can include an additional query string here if the RestAPI server requires it.
+
+Name.......: RestMethod
+Description: (Optional, defaults to POST)
+             The method to use for calling the URI. Only GET or POST are allowed.
+
+Name.......: Parameters 
+Description: (Mandatory)
+             A list of names of parameters. Wildcards (? and *) are supported but by using wildcards the order of parameters may be randomized, so if the RestAPI needs parameters in a specific order, wildcards should be avoided. These names and their corresponding values are submitted to the RestAPI server who should know what to do with it.
+             Parameters that do not exist, either because they are unset or have an empty value, are not submitted at all. The script will not throw any error if a parameter is unset or has an empty value as this is expected behaviour.
+             Some parameter names are blacklisted and will never be submitted to the RestAPI server. The variable $script:BlacklistedParameters in PSDRestApi.psm1 defines the names of blacklisted parameters.
+
+Name.......: ParameterCondition
+Description: (Optional, defaults to OR)
+             Defines how more than one "Parameters" shall be combined during compare. Allowed values are OR and AND.
+             If set to "OR", parameters shall be checked in order of appearance and the first matching parameter wins.
+             If set to "AND", all defined parameters need to match.
+             This is basically the same as MDT did it with it´s database queries. However, the handling of this parameter is completely up to the RestAPI server and how it processes the "Parameters". When using my RestPS script, this parameter has no function at all. Maybe someone is willing to create another RestPS script that queries the MDT database, so this parameter might come handy.
+
+Name.......: ClientCertificate
+Description: [env] (Optional, depends on how the RestAPI server is configured)
+             The client certificate to use when identifying to the RestAPI server. Can be either the thumbprint of a certificate or a PKCS#12 file.
+             When using a thumbprint, a certificate with that thumbprint needs to exist in the certificate store.
+             When defined as a filename, this file needs to be in PKCS#12 format and the file extension must be .PFX or .P12. The file needs to be placed in either the "%DeploymentShare%\PSDResources\Certificates" folder, so it is stored inside the installation image during build, or put in any other folder relative to the "%DeploymentShare%". The script tries to retrieve the file from the deployment share, but it needs a complete relative path. For example, if you have a file named "MyCert.pfx" which is stored in "%DeploymentShare%\MyCerts\RestAPI\MyCert.pfx", the setting in the CustomSettings.ini should read "ClientCertificate=MyCerts\RestAPI\MyCert.pfx".
+             An optional password for the PFX file can be defined with parameter "ClientCertificatePassword".
+
+Name.......: ClientCertificatePassword
+Description: [env] (Optional)
+             The password for a password protected .PFX or .P12 file.
+
+Name.......: ServerCertificateThumbprint
+Description: [env] (Optional)
+             The thumbprint of the certificate of the remote server.
+             One or more thumbprints can be specified, seperated by comma. If the thumbprint of the server certificate does not match any of these thumbprints, a connection is not established for security reason. This behaviour cannot be overridden by parameter.
+			 When this option is unset, the certificate of the RestAPI server will not be validated at all.
+
+Name.......: AuthUser
+Description: [env] (Optional, depends on how the RestAPI is configured)
+             The name of a user to authenticate at the RestAPI server. User and password are passed as a simple unencrypted "Authorization"-HTTP-header and the RestAPI server should know what to do with it.
+
+Name.......: AuthPassword
+Description: [env] (Optional)
+             The password (or authentication passphrase) for the AuthUser user.
+
+Name.......: SslProtocol
+Description: (Optional, defaults to Tls12)
+             The TLS security protocol to use when communicating with the RestAPI server. Multiple values can be specified, seperated by comma.
+             See https://learn.microsoft.com/en-us/dotnet/api/system.security.authentication.sslprotocols?view=netframework-4.8.1 for available values.
+
+Name.......: SendCredentialsOverInsecureConnection
+Description: (Optional, NOT FOR PRODUCTION USE)
+             If the value of this parameter is set to "I know what I am doing", the script will allow sending of the "Authorization"-HTTP-header even if the connection to the RestAPI server is unencrypted (http). The default behaviour is to cancel the RestAPI call when the connection is not encrypted and a user/password is defined.
+             This settings is for testing purpose only and should not be used in production environments!
+
+You might have noticed that some of the options above have the [env] keyword in their description. This indicates that the value of this option can include named TS environment variables which will be replaced with the value of that variable. You can basically use any TS environment variable that is defined at the time of processing. Variable names must be enclosed in percentage signs (e.g. %VARNAME%).
+As an example, think of the following: When authenticating to the PSD deployment share, the variables "USERID" and "USERPASSWORD" are set to the values you provide. If you want to use the same username and password to authenticate to the RestAPI server, you can simply define "AuthUser=%USERID%" and "AuthPassword=%USERPASSWORD%" in the RestAPI INI section. During processing, the value of the "AuthUser" option will be set to the value of the "USERID" variable and "AuthPassword" will become the value of the "USERPASSWORD" variable.
+If you need "AuthUser" to include a domainname, you could defined "AuthUser=MYDOMAIN\%USERID%" or even "AuthUser=%USERDOMAIN%\%USERID%", provided that the TS environment variable "USERDOMAIN" is defined.
+
+You can even use nested variables. That means, if the value of a variable itself contains references to other variables, the script tries to replace that references, too. I have included a basic loop detection in the replacement function. The script will fail if it detects a loop in nested variables.
+
+The script will throw a terminating error if a variable cannot be replaced with it´s content because the variable does not exist. It will also throw a terminating error on an infinite loop.
+It will, however, proceed without error if the value of the variable is empty as that might be expected.
+
+
+
+Setting up the RestPS side
+==========================
+The supplied script has been tested with RestPS only. It makes use of RestPS specific variables that other RestAPI servers may not provide. It is very likely that the script can be modified to work on other RestAPI servers that use Powershell, but it is completely up to you to find out and configure accordingly!
+
+Requirements:
+-------------
+A working RestPS installation is required and the setup should fit your security needs to verify the calling system, either by user/password, certificate or other methods. I will not cover the basic setup of RestPS here.
+
+
+Installation:
+-------------
+Copy the file "PSDRespond.ps1" to a folder RestPS has access to. The script supports GET as well as POST requests.
+
+Edit the "RestPSRoutes.json" file in your RestPS "endpoints"-folder and add a new route to it:
+
+{
+	"RequestType": "<GET or POST; this should match the setting of RestMethod from your CustomSettings.ini file>",
+	"RequestURL": "/settings",
+	"RequestCommand": "<the full path to the PSDRespond.ps1 file>"
+}
+
+
+Configuration:
+--------------
+Without further configuration, the "PSDRespond.ps1" script reads it´s own settings from one or more JSON files. These files need to exist in a "config" subfolder of the same folder where the "PSDRespond.ps1" script is stored. The order of configurations is important as "PSDRespond.ps1" compares them top to bottom, and the first matching configuration wins. When using more than one configuration file, the files are loaded in alphabetical order.
+
+A "configuration", in terms of the PSDRespond.ps1 script, is mainly a set of "Conditions" and "Settings". When PSDRestApi is calling the RestPS server, it supplies a set of "Parameters", which I refer to as "Identifiers" in this document. The PSDResponse.ps1 script compares the values of these identifiers against the list of conditions of every configuration. The first configuration whose conditions are satisfied by the provided identifiers, wins and it´s settings are returned to the calling system.
+
+Lets look at the following simple configuration as an example:
+
+{
+	"name": "My first rule",
+	"compare_method": "or",
+	"conditions": {
+		"uuid": "b675c3f8-80b9-439a-aa32-6d35f21e11ca",
+		"make": "dell"
+	},
+	"settings": {
+		"OSInstall": "YES"
+	}
+}
+
+If the calling system supplies the identifier "UUID" with value "b675c3f8-80b9-439a-aa32-6d35f21e11ca", OR it supplies the identifier "MAKE" with value "Dell", the conditions of this configuration are satisfied. PSDRespond.ps1 will then return "OSInstall=YES" back to the calling system.
+If you would change the value of "compare_method" from "or" to "and", both conditions (UUID and MAKE) need to match.
+
+If the conditions are not satisfied, PSDRespond.ps1 will continue with the next configuration or simply return nothing if no configuration matches.
+
+Configurations without conditions are skipped, but they can be included in other configurations.
+
+By default, conditions always need to match the exact value of the identifier. Matching is not case-sensitive. However, you might come into situations where you need more advanced comparations. If you have, for example, systems with a lot of similar UUIDs, and all those systems shall get the same settings applied, it would be overkill to create the same configuration for each and every UUID, so I have implemented advanced condition matching.
+
+Every condition can be configured to match in one of the following ways by simply prepending the text to match with one of the following keywords:
+
+case:     Case-sensitive matching of the whole text.
+like:     Provides simple wildcard matching using * and ? wildcards.
+clike:    Same as "like", but case-sensitive.
+regex:    Provides matching against a regular expression.
+cregex:   Same as "regex", but case-sensitive.
+begin:    Matches the beginning of the identifier.
+cbegin:   Same as "begin", but case-sensitive.
+end:      Matches the end of the identifier.
+cend:     Same as "end", but case-sensitive.
+contain:  Matches if the identifier contains the value.
+ccontain: Same as "contain", but case-sensitive.
+set:      Matches against a set of values.
+cset:     Same as "set", but case-sensitive.
+
+To use one of these advanced matching methods, just add the respective keyword in front of the text to match, seperated with ":".
+
+To stay with my previous example, if you would like the identifier "MAKE" to match both "Dell" and "HP", you could change the condition "make" to "regex:(dell|hp)" or "set:dell|hp".
+If you want to match all UUIDs that start with "b675c3f8-80b9-", you could change the condition "uuid" to "begin:b675c3f8-80b9-" or "like:b675c3f8-80b9-*".
+
+When using regular expression matching, make sure that you have a valid JSON syntax. Some characters might need to be escaped!
+
+Conditions based on values of the HTTP connection:
+In addition to the identifiers ("Parameters") supplied by the calling system, conditions can also match values of the underlying HTTP connection. The following identifiers are supported and are added automatically, if available:
+
+HTTP_REQUEST_IPADDRESS: This is the IP address of the calling system.
+HTTP_REQUEST_METHOD: This is the type of request used by the calling system.
+HTTP_REQUEST_USERAGENT: The user agent string supplied by the calling system.
+HTTP_REQUEST_HOST: The name:port combination the client used to access the RestPS server.
+HTTP_REQUEST_PATH: The path of the request. When the URL is "https://psd.domain.local/settings", "/settings" is the path.
+HTTP_REQUEST_CLIENTCERT_THUMBPRINT: The thumbprint of the client certificate used to authenticate.
+HTTP_REQUEST_CLIENTCERT_SUBJECT: The subject of the client certificate used to authenticate.
+HTTP_REQUEST_CLIENTCERT_FRIENDLYNAME: The frinedly name of the client certificate used to authenticate.
+HTTP_REQUEST_CLIENTCERT_AUTHORITYKEYID: The key ID of the certificate authority that signed the client certificate used to authenticate.
+HTTP_REQUEST_AUTHORIZATION_USERNAME: The username used to authenticate to the RestPS server.
+
+Matching this identifiers is the same as with any other identifier, including extended matching.
+
+
+Prepending other configurations to a configuration:
+---------------------------------------------------
+You can prepend other configurations to a configuration. The settings of a prepended configuration will always be overwritten by settings of the configuration that prepends it. A simple example:
+
+[
+	{
+		"name": "My first config",
+		"compare_method": "or",
+		"conditions": {
+			"uuid": "b675c3f8-80b9-439a-aa32-6d35f21e11ca",
+			"make": "dell"
+		},
+		"settings": {
+			"OSInstall": "YES"
+		},
+		"prepend_configs": {
+			"name": "My prepend-only config"
+		}
+	},
+	{
+		"name": "My prepend-only config",
+		"settings": {
+			"OSInstall": "NO",
+			"FinishAction": "Shutdown"
+		}
+	}
+]
+
+In this example you see two different configurations. The first one is basically the same as in my previous examples, extended by the "prepend_configs" section. Within that section, a reference to the seconds configuration is defined. That means, if the identifiers provided by the caller match the conditions of the first configuration, PSDRespond.ps1 will also include the settings of the second configuration in the answer to the caller.
+The second configuration defines the setting "OSInstall" with a value of "NO". However, the first configuration (which prepends the second one), also defines that setting. Therefor the setting "OSInstall" will get a value of "YES".
+The answer to the caller will look like this:
+
+	OSInstall=YES
+	FinishAction=Shutdown
+
+You can prepend more than one configuration if required, and you can even define conditions for prepending a configuration and how their settings are merged. Those conditions are defined inside the "prepend_config" block and have nothing to do with conditions defined for that configuration itself. Here is a more complex example of that:
+
+[
+	{
+		"name": "My prepend-only config",
+		"settings": {
+			"OSInstall": "NO",
+			"FinishAction": "Shutdown"
+		}
+	},
+	{
+		"name": "My own config",
+		"compare_method": "and",
+		"conditions": {
+			"HTTP_REQUEST_CLIENTCERT_SUBJECT": "contain:CN=RestAPI Client 1",
+			"MAKE": "begin:Lenovo"
+		},
+		"settings": {
+			"MachineObjectOU": "OU=IT,OU=Computers,DC=contoso,DC=com",
+			"OSInstall": "YES"
+		}
+	},
+	{
+		"name": "My own config 2",
+		"compare_method": "and",
+		"conditions": {
+			"uuid": "begin:1e5f6f2e-1932-4d51-"
+		},
+		"prepend_configs": [
+			{
+				"name": "My prepend-only config"
+			},
+			{
+				"name": "My own config",
+				"merge_method": "replace",
+				"conditions": {
+					"make": "begin:Lenovo",
+					"HTTP_REQUEST_CLIENTCERT_SUBJECT": "contain:CN=RestAPI client cert for IT staff"
+				},
+				"compare_method": "and"
+			}
+		],
+		"settings": {
+			"JoinDomain": "contoso.com"
+		}
+	}
+]
+
+The calling system is submitting identifier "MAKE" with value "Lenovo Systems Inc." and uses a certificate for client authentication whose subject reads "CN=RestAPI client cert for IT staff, OU=IT, O=Contoso". It also submits identifier "UUID" with value "1e5f6f2e-1932-4d51-8a8b-01e048590619".
+
+The first configuration named "My prepend-only config" will be skipped as no conditions are defined.
+The second configuration named "My own config" will not be applied. Even if the condition "MAKE" matches, the subject of the client certificate does not, and both conditions need to match as the "compare_method" is "AND".
+The third configuration named "My own config 2" will be applied as the supplied identifier "UUID" begins with "1e5f6f2e-1932-4d51-". This configuration prepends the configuration named "My prepend-only config", which was skipped in the first place. It also prepends the configuration named "My own config" whose conditions did not match in the first place, but the condition for prepending that configuration do.
+
+The answer to the calling system will look like this:
+
+	JoinDomain=contoso.com
+	OSInstall=YES
+	FinishAction=Shutdown
+	MachineObjectOU=OU=IT,OU=Computers,DC=contoso,DC=com
+
+Please take notice of the setting "OSInstall", which is set to "YES". Normally it would be set to "NO" as it is defined so in the first prepended configuration "My prepend-only config", and all following configurations will not overwrite already defined values. In the above example, the configuration named "My own config" is prepended with a "merge_method" of "replace" which means, that all settings defined in this configuration will replace settings of configurations prepended earlier. However, settings of the "parent" configuration which prepends the others will always replace settings from prepended configurations.
+
+
+
+Using different sets of configuration files:
+--------------------------------------------
+By default, PSDRespond.ps1 uses configuration files from the folder "config" which must exist inside the folder where the script itself is stored. You can change the path by creating the file "PSDRespond.json" in the folder of PSDRespond.ps1. If, for any reason, you change the scripts name from PSDRespond.ps1 to something else, the .json file needs to be named accordingly.
+
+Put the following text inside PSDRespond.json:
+
+{
+	"config_root": "My/Config/Subfolder"
+}
+
+"config_root" defines the path to a folder where PSDRespond.ps1 loads all configuration files from. In the example above, the folder is "My\Config\Subfolder" which must reside in the same folder as PSDResponse.ps1. You can define a full qualified path or a path relative to the PSDResond.ps1 script.
+
+You can also use the following variables in the path definition:
+
+%SCRIPT_ROOT% will be replaced by the path of PSDRespond.ps1.
+
+%HTTP_REQUEST_PATH% will be replaced by the path of the HTTP request.
+By using this variable, it is possible to call the same script by different URLs and use a different configuration each.
+
+Consider the following: You call RestPS via the two URLs "https://restapi.domain.local/settings" and "https://restapi.domain.local/applications" and want each one to return settings from its own set of configuration files. For this to work you need to configure two seperate routes in "RestPSRoutes.json", each pointing to the same PSDRespond.ps1 file in the same location. The PSDRespond.json file has the following content:
+
+{
+	"config_root": "%HTTP_REQUEST_PATH%"
+}
+
+The script detects the requested URL and sets the config folders accordlingly. For the first URL, the folder will be "settings", for the second one it will be "applications". Both folders need to exist inside the folder where PSDResond.ps1 is stored.
