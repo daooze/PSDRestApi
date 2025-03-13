@@ -9,8 +9,8 @@
 # RestPS command window, so if RestPS is running as a
 # service you might not see anything unless stdout redirection
 # is somehow configured.
-$script:DebugPreference = 'Continue'
-$script:VerbosePreference = 'Continue'
+##$script:DebugPreference = 'Continue'
+##$script:VerbosePreference = 'Continue'
 $script:InformationPreference = 'Continue'
 
 function Expand-Variables {
