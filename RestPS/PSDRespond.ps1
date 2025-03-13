@@ -276,7 +276,7 @@ function Get-IdentifiersFromGetArgs {
     Copyright: (c) 2025, Malte Hohmann (@daooze)
     MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
-    TODO: Check, and possibly add, handling of the "--" parameter. Maybe it is not required?
+    TODO: Check, and possibly add, correct handling of the "--" parameter. Maybe it is not required?
 
     .Example
     #>
@@ -289,16 +289,27 @@ function Get-IdentifiersFromGetArgs {
         $begin = $false
         $ret = [ordered]@{}
 
-        foreach ($a in ($Args -split '&')) {
-            $key, $value = [Uri]::UnescapeDataString($a) -split '='
-
-            if ($key -eq 'condition') {
-                $begin = $true
-                continue
-            }
-            elseif ($begin) {
-                if ($ret.Contains($key)) { continue }
-                $ret.Add($key, $value)
+        [string[]]$args_t = $Args -split '&'
+<#
+        if (($pos = $args_t.IndexOf('--')) -gt -1) {
+            $pos++
+            $begin = $true
+        }
+        else {
+            $pos = 0
+        }
+#>
+        for ($i=$pos; $i -lt $args_t.Count; $i++) {
+            $key, $value = [Uri]::UnescapeDataString($args_t.Get($i)) -split '='
+            if (-not [string]::IsNullOrWhiteSpace($key)) {
+                if ($key -eq 'condition') {
+                    $begin = $true
+                    continue
+                }
+                elseif ($begin) {
+                    if ($ret.Contains($key)) { continue }
+                    $ret.Add($key, $value)
+                }
             }
         }
 
@@ -888,9 +899,9 @@ function Find-MatchingConfig {
 }
 
 
-# Get configuration from files.
 [object[]]$config = $null
 try {
+    # Get configuration from files.
     $config_file = $PSCommandPath -replace '\.[a-z0-9]+$', '.json'
     if (Test-Path -Path $config_file) {
         Write-Verbose "$($MyInvocation.MyCommand.Name): Using base config from '$config_file'"
@@ -900,24 +911,35 @@ try {
         Write-Verbose "$($MyInvocation.MyCommand.Name): Using default base config"
         $config = Import-ScriptConfig -ErrorAction Stop
     }
+
+    # Retrieve identifiers from the request.
+    switch ($script:request.HttpMethod) {
+        'GET' {
+            $Parameters = Get-IdentifiersFromGetArgs -Args $RequestArgs
+            break
+        }
+
+        'POST' {
+            $Parameters = Get-IdentifiersFromPostData -PostData $Body -ContentType $script:request.ContentType
+            break
+        }
+
+        default {
+            throw "HTTP method $_ is not supported"
+        }
+    }
+
+    # Find and return matching config.
+    if ($config -ne $null -and ($result = Find-MatchingConfig -Config $config -Identifiers $Parameters | Select-Object -First 1)) {
+        $result | Add-Member -MemberType NoteProperty -Name '_RestAPI_Metadata' -Value @{'Status'='Ok'} -PassThru
+    }
+    else {
+        [pscustomobject]@{'_RestAPI_Metadata'=@{'Status'='no_result'}}
+    }
 }
 catch {
     Write-Debug "$($MyInvocation.MyCommand.Name): $($_.Exception.Message)"
     $script:StatusDescription = "Internal Server Error"
     $script:StatusCode = 500
     exit $script:StatusCode
-}
-
-if ($script:request.HttpMethod -eq 'GET') {
-    $Parameters = Get-IdentifiersFromGetArgs -Args $RequestArgs
-}
-else {
-    $Parameters = Get-IdentifiersFromPostData -PostData $Body -ContentType $script:request.ContentType
-}
-
-if ($config -ne $null -and ($result = Find-MatchingConfig -Config $config -Identifiers $Parameters | Select-Object -First 1)) {
-    $result | Add-Member -MemberType NoteProperty -Name '_RestAPI_Metadata' -Value @{'Status'='Ok'} -PassThru
-}
-else {
-    [pscustomobject]@{'_RestAPI_Metadata'=@{'Status'='no_result'}}
 }
