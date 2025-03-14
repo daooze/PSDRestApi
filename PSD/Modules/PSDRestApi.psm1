@@ -710,7 +710,7 @@ function Invoke-PSDGatherRestApi {
             if ($param['Method'] -eq 'POST') {
                 Write-PSDLog -Message "$($MyInvocation.MyCommand.Name): POST data: '$($param['Body'])'"
             }
-            $result = Invoke-RestMethod @param -UseBasicParsing -DisableKeepAlive -TimeoutSec 5 -WebSession $global:WebSession
+            $result = Invoke-RestMethod @param -UseBasicParsing -DisableKeepAlive -TimeoutSec 5
         }
         catch {
             Write-PSDLog -Message "$($MyInvocation.MyCommand.Name): $($_.Exception.Message)"
