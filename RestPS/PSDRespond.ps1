@@ -431,22 +431,61 @@ function Get-ExtendedIdentifiers {
 
         try {
             if ($HttpListenerRequest -ne $null) {
-                $ret.Add('HTTP_REQUEST_IPADDRESS', $HttpListenerRequest.RemoteEndPoint.Address.IPAddressToString)
-                $ret.Add('HTTP_REQUEST_METHOD', $HttpListenerRequest.HttpMethod)
+                # Details about the remote host. If we are behind a reverse proxy server, those information
+                # needs to be passed by the reverse proxy as HTTP headers. Otherwise they will default to
+                # the reverse proxy itself.
+                # HTTP headers take precedence over information from the ListenerRequest.
+                #
+                # Try to get the IP address of the calling remote system
+                if (-not [string]::IsNullOrWhiteSpace($HttpListenerRequest.Headers.Item('X-REMOTE-ADDR'))) {
+                    $ret.Add('HTTP_REQUEST_IPADDRESS', $HttpListenerRequest.Headers.Item('X-REMOTE-ADDR'))
+                }
+                elseif (-not [string]::IsNullOrWhiteSpace($HttpListenerRequest.Headers.Item('X-Forwarded-For')) `
+                -and $HttpListenerRequest.Headers.Item('X-Forwarded-For') -match '^(?<ip>[0-9]{1,3}(\.[0-9]{1,3}){3})') {
+                    $ret.Add('HTTP_REQUEST_IPADDRESS', $Matches['ip'])
+                }
+                else {
+                    $ret.Add('HTTP_REQUEST_METHOD', $HttpListenerRequest.HttpMethod)
+                }
 
+                # Try to get the server name used by the calling system to access the RestAPI server
+                if (-not [string]::IsNullOrWhiteSpace($HttpListenerRequest.Headers.Item('X-ORIGINAL-HOST')) `
+                -and $HttpListenerRequest.Headers.Item('X-ORIGINAL-HOST') -notmatch '^[0-9]{1,3}(\.[0-9]{1,3}){3}') {
+                    $ret.Add('HTTP_REQUEST_HOST', $HttpListenerRequest.Headers.Item('X-ORIGINAL-HOST'))
+                }
+                elseif (-not [string]::IsNullOrWhiteSpace($HttpListenerRequest.UserHostName)) {
+                    $ret.Add('HTTP_REQUEST_HOST', $HttpListenerRequest.UserHostName)
+                }
+
+                # Get the user agent string
                 if ($HttpListenerRequest.UserAgent -ne $null) {
                     $ret.Add('HTTP_REQUEST_USERAGENT', $HttpListenerRequest.UserAgent)
                 }
 
-                if (-not [string]::IsNullOrWhiteSpace($HttpListenerRequest.UserHostName)) {
-                    $ret.Add('HTTP_REQUEST_HOST', $HttpListenerRequest.UserHostName)
-                }
-
+                # Get the request path
                 if (-not [string]::IsNullOrWhiteSpace($HttpListenerRequest.Url.LocalPath)) {
                     $ret.Add('HTTP_REQUEST_PATH', $HttpListenerRequest.Url.LocalPath)
                 }
 
-                if ($cert = $HttpListenerRequest.GetClientCertificate()) {
+                # Details about the client certificate if one is provided.
+                # If we are running behind an IIS with Application Request Routing installed,
+                # the client certificate is passed through in the X-ARR-ClientCert header as
+                # Base64 encoded string. If this header is present, we build the client certificate
+                # from it. Otherwise we rely on the data from the ListenerRequest.
+                $cert = $null
+                if (-not [string]::IsNullOrWhiteSpace($HttpListenerRequest.Headers.Item('X-ARR-ClientCert'))) {
+                    try {
+                        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new([System.Convert]::FromBase64String($HttpListenerRequest.Headers.Item('X-ARR-ClientCert')))
+                    } catch {
+                        Write-Debug "$($MyInvocation.MyCommand.Name): $($_.Exception.Message)"
+                    }
+                }
+
+                if ($cert -eq $null) {
+                    $cert = $HttpListenerRequest.GetClientCertificate()
+                }
+
+                if ($cert -ne $null) {
                     if (-not [string]::IsNullOrWhiteSpace($cert.Thumbprint)) {
                         $ret.Add('HTTP_REQUEST_CLIENTCERT_THUMBPRINT', $cert.Thumbprint)
                     }
