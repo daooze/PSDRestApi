@@ -168,7 +168,7 @@ function Convert-IniSectionToRestApiParam {
                 $userpwd = Expand-Variables -String $Section['AuthPassword'] -Variables $TSEnv
 
                 # If the password is enclosed in double quotes, remove those quotes.
-                if ($userpwd[0] -eq $userpwd[-1] -eq '"') {$userpwd = $userpwd.Substring(1, $userpwd.Length -2)}
+                if ($userpwd[0] -eq '"' -and $userpwd[0] -eq $userpwd[-1]) {$userpwd = $userpwd.Substring(1, $userpwd.Length -2)}
 
                 $param['Credential'] = [pscredential]::new($username, (ConvertTo-SecureString -String $userpwd -AsPlainText -Force))
             }
@@ -317,7 +317,7 @@ function Convert-IniSectionToRestApiParam {
                 "ClientCertificatePassword" {
                     $np = Expand-Variables -String $item.Value -Variables $TSEnv
                     # If the given password is enclosed in double quotes, remove those quotes.
-                    if ($item.Value[0] -eq $item.Value[-1] -eq '"') {$item.Value = $item.Value.Substring(1, $item.Value.Length -2)}
+                    if ($np -eq '"' -and $np[0] -eq $np[-1]) {$item.Value = $np.Substring(1, $np.Length -2)}
 
                     # Do not add parameter if the value is empty.
                     if ([string]::IsNullOrWhiteSpace($item.Value)) { continue rest_params }
@@ -605,7 +605,7 @@ function Invoke-PSDGatherRestApi {
                                 $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 ($ClientCertificate, $ClientCertificatePassword)
                             }
                             catch {
-                                Write-PSDLog -Message "$($MyInvocation.MyCommand.Name): Failed opening the certificate file at '$ClientCertificate' using the provided passphrase. The error is: $($_.Exceptione.Message)"
+                                Write-PSDLog -Message "$($MyInvocation.MyCommand.Name): Failed opening the certificate file at '$ClientCertificate' using the provided passphrase. The error is: $($_.Exception.Message)"
                             }
                         }
                         # Try opening the file without password
@@ -614,7 +614,7 @@ function Invoke-PSDGatherRestApi {
                                 $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 ($ClientCertificate)
                             }
                             catch {
-                                Write-PSDLog -Message "$($MyInvocation.MyCommand.Name): Failed opening the certificate file at '$ClientCertificate': $($_.Exceptione.Message)"
+                                Write-PSDLog -Message "$($MyInvocation.MyCommand.Name): Failed opening the certificate file at '$ClientCertificate': $($_.Exception.Message)"
                                 throw
                             }
                         }
