@@ -317,7 +317,7 @@ function Convert-IniSectionToRestApiParam {
                 "ClientCertificatePassword" {
                     $np = Expand-Variables -String $item.Value -Variables $TSEnv
                     # If the given password is enclosed in double quotes, remove those quotes.
-                    if ($np -eq '"' -and $np[0] -eq $np[-1]) {$item.Value = $np.Substring(1, $np.Length -2)}
+                    if ($np[0] -eq '"' -and $np[0] -eq $np[-1]) {$item.Value = $np.Substring(1, $np.Length -2)}
 
                     # Do not add parameter if the value is empty.
                     if ([string]::IsNullOrWhiteSpace($item.Value)) { continue rest_params }
@@ -695,7 +695,7 @@ function Invoke-PSDGatherRestApi {
                 }
                 else {
                     Write-PSDLog -Message "$($MyInvocation.MyCommand.Name): The certificate with thumbprint $($cert.Thumbprint) is not trusted"
-                    throw "Certificate untrusted"
+                    throw "The certificate of the RestAPI server is untrusted"
                 }
             }
             catch {
